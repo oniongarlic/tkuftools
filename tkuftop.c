@@ -103,7 +103,13 @@ rack.bikes_avail=json_get_int(o, "bikes_avail", -1);
 rack.slots_total=json_get_int(o, "slots_total", -1);
 rack.slots_avail=json_get_int(o, "slots_avail", -1);
 
-printf("%-3s %-30s: [%8d] [%8d] [%8d]\n", rack.stop_code, rack.name, rack.bikes_avail, rack.slots_total, rack.slots_avail);
+printf("%-3s %-30s: [%3d] [%3d] [%3d]", rack.stop_code, rack.name, rack.bikes_avail, rack.slots_total, rack.slots_avail);
+if (rack.bikes_avail==0)
+	printf("!");
+else if (rack.bikes_avail<3)
+	printf("*");
+
+printf("\n");
 }
 
 void print_racks(json_object *racks)
