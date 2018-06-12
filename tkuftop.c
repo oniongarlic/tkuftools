@@ -105,7 +105,7 @@ rack.bikes_avail=json_get_int(o, "bikes_avail", -1);
 rack.slots_total=json_get_int(o, "slots_total", -1);
 rack.slots_avail=json_get_int(o, "slots_avail", -1);
 
-printf("%-3s [%3d] [%3d] [%3d] - %-30s", rack.stop_code, rack.bikes_avail, rack.slots_total, rack.slots_avail, rack.name);
+printf("%-3s [%3d] [%3d /%3d] - %-30s", rack.stop_code, rack.bikes_avail, rack.slots_total, rack.slots_avail, rack.name);
 if (rack.bikes_avail==0)
 	printf("!");
 else if (rack.bikes_avail<3)
@@ -116,6 +116,7 @@ printf("\n");
 
 void print_racks(json_object *racks)
 {
+printf("ID  Avail Slots       Name                     Flag\n");
 json_object_object_foreach(racks, key, val) {
 	print_rack(val);
 }
@@ -164,7 +165,12 @@ curl_easy_cleanup(curl);
 
 json_object *obj = json_tokener_parse(chunk.memory);
 if (!obj) {
-	fprintf(stderr, "JSON Error\n");
+	fprintf(stderr, "Invalid JSON\n");
+	return -1;
+}
+
+if (!json_object_is_type(obj, json_type_object)) {
+	fprintf(stderr, "JSON is not an object\n");
 	return -1;
 }
 
