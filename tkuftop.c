@@ -2,11 +2,13 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <math.h>
 
 #include <curl/curl.h>
 
 #include <json-c/json.h>
 
+#define MAX_BIKES 300
 #define API_URL "http://data.foli.fi/citybike"
 
 CURL *curl;
@@ -103,7 +105,7 @@ rack.bikes_avail=json_get_int(o, "bikes_avail", -1);
 rack.slots_total=json_get_int(o, "slots_total", -1);
 rack.slots_avail=json_get_int(o, "slots_avail", -1);
 
-printf("%-3s %-30s: [%3d] [%3d] [%3d]", rack.stop_code, rack.name, rack.bikes_avail, rack.slots_total, rack.slots_avail);
+printf("%-3s [%3d] [%3d] [%3d] - %-30s", rack.stop_code, rack.bikes_avail, rack.slots_total, rack.slots_avail, rack.name);
 if (rack.bikes_avail==0)
 	printf("!");
 else if (rack.bikes_avail<3)
@@ -119,6 +121,13 @@ json_object_object_foreach(racks, key, val) {
 }
 }
 
+int load(struct Racks *ri)
+{
+float t=((float)ri->bikes_total_avail/MAX_BIKES)*100.0f;
+
+return round(100.0-t);
+}
+
 void print_header(struct Racks *ri)
 {
 struct tm *tmp;
@@ -128,7 +137,7 @@ char outstr[40];
 strftime(outstr, sizeof(outstr), "%F %T", tmp);
 
 printf("\e[1;1H\e[2J");
-printf("TkuFtop - %s, available %d\n\n", outstr, ri->bikes_total_avail);
+printf("TkuFtop - %s, available %d, load %d %%\n\n", outstr, ri->bikes_total_avail, load(ri));
 }
 
 int get(char *url)
@@ -154,6 +163,10 @@ curl_easy_cleanup(curl);
 //fprintf(stderr, "\n\n%s\n\n", chunk.memory);
 
 json_object *obj = json_tokener_parse(chunk.memory);
+if (!obj) {
+	fprintf(stderr, "JSON Error\n");
+	return -1;
+}
 
 //dumpObject(obj);
 
@@ -182,8 +195,7 @@ int main (int argc, char **argv)
 {
 curl_global_init(CURL_GLOBAL_DEFAULT);
 
-while (1) {
-	get(API_URL);
+while (get(API_URL)==0) {
 	sleep(5);
 }
 
