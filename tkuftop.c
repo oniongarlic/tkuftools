@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 #include <curl/curl.h>
 
@@ -13,6 +14,13 @@ CURL *curl;
 struct MemoryStruct {
   char *memory;
   size_t size;
+};
+
+struct Racks {
+ int racks_total;
+ int bikes_total_avail;
+ time_t generated;
+ time_t lastupdate;
 };
 
 struct Rack {
@@ -105,8 +113,21 @@ json_object_object_foreach(racks, key, val) {
 }
 }
 
+void print_header(struct Racks *ri)
+{
+struct tm *tmp;
+tmp = localtime(&ri->lastupdate);
+char outstr[40];
+
+strftime(outstr, sizeof(outstr), "%F %T", tmp);
+
+printf("\e[1;1H\e[2J");
+printf("TkuFtop - %s, available %d\n\n", outstr, ri->bikes_total_avail);
+}
+
 int get(char *url)
 {
+struct Racks ri;
 struct MemoryStruct chunk;
 CURLcode res;
 
@@ -130,9 +151,17 @@ json_object *obj = json_tokener_parse(chunk.memory);
 
 //dumpObject(obj);
 
+// "racks_total":38,"bikes_total_avail":269,"generated":1528780212,"lastupdate":1528780201
+
+ri.racks_total=json_get_int(obj, "rack_total", 0);
+ri.bikes_total_avail=json_get_int(obj, "bikes_total_avail", 0);
+ri.generated=json_get_int(obj, "generated", 0);
+ri.lastupdate=json_get_int(obj, "lastupdate", 0);
+
+print_header(&ri);
+
 json_object *racks;
 if (json_object_object_get_ex(obj, "racks", &racks)) {
-	printf("\e[1;1H\e[2J");
 	print_racks(racks);
 }
 
