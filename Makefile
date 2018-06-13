@@ -6,8 +6,8 @@ LDFLAGS += $(shell pkg-config --libs json-c libcurl)
 
 all: tkuftop
 
-tkuftop: tkuftop.o
-	$(CC) tkuftop.o $(LDFLAGS)  -o tkuftop
+tkuftop: tkuftop.o json.o
+	$(CC) tkuftop.o json.o $(LDFLAGS)  -o tkuftop
 
 clean:
-	-rm tkuftop tkuftop.o
+	-rm tkuftop *.o

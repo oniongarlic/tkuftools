@@ -6,7 +6,7 @@
 
 #include <curl/curl.h>
 
-#include <json-c/json.h>
+#include "json.h"
 
 #define MAX_BIKES 300
 #define API_URL "http://data.foli.fi/citybike"
@@ -67,33 +67,7 @@ curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
 curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)chunk);
 }
 
-void dumpObject(json_object *o)
-{
-json_object_object_foreach(o, key, val) {
-	int val_type = json_object_get_type(val);
-	printf("key: \"%s\", type of val: %d\n", key, val_type);
-}
-}
 
-const char *json_get_string(json_object *o, const char *key)
-{
-json_object *tmp;
-
-if (json_object_object_get_ex(o, key, &tmp))
-	return json_object_get_string(tmp);
-
-return NULL;
-}
-
-int json_get_int(json_object *o, const char *key, int defval)
-{
-json_object *tmp;
-
-if (json_object_object_get_ex(o, key, &tmp))
-	return json_object_get_int(tmp);
-
-return defval;
-}
 
 void print_rack(json_object *o)
 {
