@@ -115,16 +115,14 @@ printf("\e[1;1H\e[2J");
 printf("TkuFtop - %s, available %d, load %d %%\n\n", outstr, ri->bikes_total_avail, load(ri));
 }
 
-int get(char *url)
+int get(char *url, struct MemoryStruct *chunk)
 {
-struct Racks ri;
-struct MemoryStruct chunk;
 CURLcode res;
 
-chunk.memory = malloc(8192);
-chunk.size = 0;
+chunk->memory = malloc(8192);
+chunk->size = 0;
 
-prepare(url, &chunk);
+prepare(url, chunk);
 res=curl_easy_perform(curl);
 if(res!=CURLE_OK) {
 	fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
@@ -134,10 +132,16 @@ if(res!=CURLE_OK) {
 curl_easy_cleanup(curl);
 
 //printf("Downloaded: %d\n", chunk.size);
-
 //fprintf(stderr, "\n\n%s\n\n", chunk.memory);
 
-json_object *obj = json_tokener_parse(chunk.memory);
+return 0;
+}
+
+int follari_parse_response(struct MemoryStruct *chunk)
+{
+struct Racks ri;
+
+json_object *obj = json_tokener_parse(chunk->memory);
 if (!obj) {
 	fprintf(stderr, "Invalid JSON\n");
 	return -1;
@@ -147,10 +151,6 @@ if (!json_object_is_type(obj, json_type_object)) {
 	fprintf(stderr, "JSON is not an object\n");
 	return -1;
 }
-
-//dumpObject(obj);
-
-// "racks_total":38,"bikes_total_avail":269,"generated":1528780212,"lastupdate":1528780201
 
 ri.racks_total=json_get_int(obj, "rack_total", 0);
 ri.bikes_total_avail=json_get_int(obj, "bikes_total_avail", 0);
@@ -166,6 +166,18 @@ if (json_object_object_get_ex(obj, "racks", &racks)) {
 
 json_object_put(obj);
 
+return 0;
+}
+
+int follari_update()
+{
+struct MemoryStruct chunk;
+
+if (get(API_URL, &chunk)!=0)
+    return -1;
+
+follari_parse_response(&chunk);
+
 free(chunk.memory);
 
 return 0;
@@ -175,7 +187,7 @@ int main (int argc, char **argv)
 {
 curl_global_init(CURL_GLOBAL_DEFAULT);
 
-while (get(API_URL)==0) {
+while (follari_update()==0) {
 	sleep(5);
 }
 
