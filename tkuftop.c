@@ -38,6 +38,9 @@ struct Rack {
  int slots_avail;
 };
 
+static struct Racks ri;
+static uint rentals=0;
+
 static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
   size_t realsize = size * nmemb;
@@ -112,7 +115,7 @@ char outstr[40];
 strftime(outstr, sizeof(outstr), "%F %T", tmp);
 
 printf("\e[1;1H\e[2J");
-printf("TkuFtop - %s, available %d, load %d %%\n\n", outstr, ri->bikes_total_avail, load(ri));
+printf("TkuFtop - %s, available %d, load %d%%, rentals %d\n\n", outstr, ri->bikes_total_avail, load(ri), rentals);
 }
 
 int get(char *url, struct MemoryStruct *chunk)
@@ -139,7 +142,7 @@ return 0;
 
 int follari_parse_response(struct MemoryStruct *chunk)
 {
-struct Racks ri;
+int bikes;
 
 json_object *obj = json_tokener_parse(chunk->memory);
 if (!obj) {
@@ -153,7 +156,13 @@ if (!json_object_is_type(obj, json_type_object)) {
 }
 
 ri.racks_total=json_get_int(obj, "rack_total", 0);
-ri.bikes_total_avail=json_get_int(obj, "bikes_total_avail", 0);
+bikes=json_get_int(obj, "bikes_total_avail", 0);
+
+if (ri.bikes_total_avail>0 && ri.bikes_total_avail<bikes)
+    rentals+=bikes-ri.bikes_total_avail;
+
+ri.bikes_total_avail=bikes;
+
 ri.generated=json_get_int(obj, "generated", 0);
 ri.lastupdate=json_get_int(obj, "lastupdate", 0);
 
@@ -186,6 +195,8 @@ return 0;
 int main (int argc, char **argv)
 {
 curl_global_init(CURL_GLOBAL_DEFAULT);
+
+ri.bikes_total_avail=-1;
 
 while (follari_update()==0) {
 	sleep(5);
