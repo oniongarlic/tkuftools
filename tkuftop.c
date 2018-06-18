@@ -4,19 +4,11 @@
 #include <time.h>
 #include <math.h>
 
-#include <curl/curl.h>
-
+#include "http.h"
 #include "json.h"
 
 #define MAX_BIKES 300
 #define API_URL "http://data.foli.fi/citybike"
-
-CURL *curl;
-
-struct MemoryStruct {
-  char *memory;
-  size_t size;
-};
 
 struct Racks {
  int racks_total;
@@ -40,37 +32,6 @@ struct Rack {
 
 static struct Racks ri;
 static uint rentals=0;
-
-static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
-{
-  size_t realsize = size * nmemb;
-  struct MemoryStruct *mem = (struct MemoryStruct *)userp;
-
-  mem->memory = realloc(mem->memory, mem->size + realsize + 1);
-  if(mem->memory == NULL) {
-    /* out of memory! */ 
-    printf("not enough memory (realloc returned NULL)\n");
-    return 0;
-  }
-
-  memcpy(&(mem->memory[mem->size]), contents, realsize);
-  mem->size += realsize;
-  mem->memory[mem->size] = 0;
-
-  return realsize;
-}
-
-void prepare(char *url, struct MemoryStruct *chunk)
-{
-curl = curl_easy_init();
-curl_easy_setopt(curl, CURLOPT_URL, url);
-curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/1.0");
-curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)chunk);
-}
-
-
 
 void print_rack(json_object *o)
 {
@@ -118,35 +79,12 @@ printf("\e[1;1H\e[2J");
 printf("TkuFtop - %s, available %d, load %d%%, rentals %d\n\n", outstr, ri->bikes_total_avail, load(ri), rentals);
 }
 
-int get(char *url, struct MemoryStruct *chunk)
-{
-CURLcode res;
-
-chunk->memory = malloc(8192);
-chunk->size = 0;
-
-prepare(url, chunk);
-res=curl_easy_perform(curl);
-if(res!=CURLE_OK) {
-	fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-	curl_easy_cleanup(curl);
-	return -1;
-}
-curl_easy_cleanup(curl);
-
-//printf("Downloaded: %d\n", chunk.size);
-//fprintf(stderr, "\n\n%s\n\n", chunk.memory);
-
-return 0;
-}
-
-int follari_parse_response(struct MemoryStruct *chunk)
+int follari_parse_response(json_object *obj)
 {
 int bikes;
 
-json_object *obj = json_tokener_parse(chunk->memory);
 if (!obj) {
-	fprintf(stderr, "Invalid JSON\n");
+	fprintf(stderr, "Invalid JSON object data\n");
 	return -1;
 }
 
@@ -180,21 +118,18 @@ return 0;
 
 int follari_update()
 {
-struct MemoryStruct chunk;
-
-if (get(API_URL, &chunk)!=0)
+json_object *obj=http_get_json(API_URL);
+if (!obj)
     return -1;
 
-follari_parse_response(&chunk);
-
-free(chunk.memory);
+follari_parse_response(obj);
 
 return 0;
 }
 
 int main (int argc, char **argv)
 {
-curl_global_init(CURL_GLOBAL_DEFAULT);
+http_init();
 
 ri.bikes_total_avail=-1;
 
@@ -202,6 +137,7 @@ while (follari_update()==0) {
 	sleep(5);
 }
 
-curl_global_cleanup();
+http_deinit();
+
 return 0;
 }
