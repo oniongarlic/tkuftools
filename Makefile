@@ -1,15 +1,23 @@
 CC=gcc
 LDFLAGS=-lm
 
+CFLAGS=-g -O0 -pipe
+
 CFLAGS += $(shell pkg-config --cflags json-c libcurl)
 LDFLAGS += $(shell pkg-config --libs json-c libcurl)
 
-OBJ=tkuftop.o json.o http.o
+COBJ=json.o http.o
 
-all: tkuftop
+TKUFTOP=tkuftop.o $(COBJ)
+TKUFSTOP=tkufstop.o $(COBJ)
 
-tkuftop: $(OBJ)
-	$(CC) $(OBJ) $(LDFLAGS)  -o tkuftop
+all: tkuftop tkufstop
+
+tkuftop: $(TKUFTOP)
+	$(CC) $(TKUFTOP) $(LDFLAGS) -o tkuftop
+
+tkufstop: $(TKUFSTOP)
+	$(CC) $(TKUFSTOP) $(LDFLAGS)  -o tkufstop
 
 clean:
 	-rm tkuftop *.o
