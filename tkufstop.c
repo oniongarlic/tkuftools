@@ -205,7 +205,10 @@ if (validate_stop(stop)!=1) {
 
 http_init();
 
-foli_stop_update(stop);
+if (foli_stop_update(stop)!=0) {
+    fprintf(stderr, "Invalid stop or no data\n");
+    return 2;
+}
 
 http_deinit();
 return 0;

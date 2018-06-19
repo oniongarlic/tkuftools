@@ -40,6 +40,7 @@ curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)chunk);
 
 static int http_get(char *url, struct MemoryStruct *chunk)
 {
+long http_code=0;
 CURLcode res;
 
 chunk->memory = malloc(8192);
@@ -47,6 +48,9 @@ chunk->size = 0;
 
 http_prepare(url, chunk);
 res=curl_easy_perform(curl);
+
+curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+
 if(res!=CURLE_OK) {
 	fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
 	curl_easy_cleanup(curl);
@@ -56,6 +60,9 @@ curl_easy_cleanup(curl);
 
 //printf("Downloaded: %d\n", chunk.size);
 //fprintf(stderr, "\n\n%s\n\n", chunk.memory);
+
+if (http_code!=200)
+    return http_code;
 
 return 0;
 }
