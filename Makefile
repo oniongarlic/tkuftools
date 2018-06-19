@@ -11,6 +11,8 @@ COBJ=json.o http.o
 TKUFTOP=tkuftop.o $(COBJ)
 TKUFSTOP=tkufstop.o $(COBJ)
 
+DESTDIR=/
+
 all: tkuftop tkufstop
 
 tkuftop: $(TKUFTOP)
@@ -21,3 +23,6 @@ tkufstop: $(TKUFSTOP)
 
 clean:
 	-rm tkuftop *.o
+
+install:
+	install -m 755 tkuftop tkufstop $(DESTDIR)/usr/bin
