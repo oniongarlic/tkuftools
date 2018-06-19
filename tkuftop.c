@@ -32,6 +32,7 @@ struct Rack {
 
 static struct Racks ri;
 static uint rentals=0;
+static uint returns=0;
 
 void print_rack(json_object *o)
 {
@@ -76,7 +77,7 @@ char outstr[40];
 strftime(outstr, sizeof(outstr), "%F %T", tmp);
 
 printf("\e[1;1H\e[2J");
-printf("TkuFtop - %s, available %d, load %d%%, rentals %d\n\n", outstr, ri->bikes_total_avail, load(ri), rentals);
+printf("TkuFtop - %s, available %d, load %d%%\nrentals %d, returns %d\n\n", outstr, ri->bikes_total_avail, load(ri), rentals, returns);
 }
 
 int follari_parse_response(json_object *obj)
@@ -98,6 +99,8 @@ bikes=json_get_int(obj, "bikes_total_avail", 0);
 
 if (ri.bikes_total_avail>0 && ri.bikes_total_avail<bikes)
     rentals+=bikes-ri.bikes_total_avail;
+else if (ri.bikes_total_avail>0 && ri.bikes_total_avail>bikes)
+    returns+=ri.bikes_total_avail-bikes;
 
 ri.bikes_total_avail=bikes;
 
