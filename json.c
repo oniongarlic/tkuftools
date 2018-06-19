@@ -7,8 +7,8 @@ const char *json_get_string(json_object *o, const char *key)
 json_object *tmp;
 
 if (json_object_object_get_ex(o, key, &tmp))
-    if (json_object_is_type(o, json_type_string))
-	return json_object_get_string(tmp);
+    if (json_object_is_type(tmp, json_type_string))
+    	return json_object_get_string(tmp);
 
 return NULL;
 }
@@ -18,8 +18,19 @@ int json_get_int(json_object *o, const char *key, int defval)
 json_object *tmp;
 
 if (json_object_object_get_ex(o, key, &tmp))
-    if (json_object_is_type(o, json_type_int))
+    if (json_object_is_type(tmp, json_type_int))
     	return json_object_get_int(tmp);
+
+return defval;
+}
+
+int json_get_bool(json_object *o, const char *key, int defval)
+{
+json_object *tmp;
+
+if (json_object_object_get_ex(o, key, &tmp))
+    if (json_object_is_type(tmp, json_type_boolean))
+    	return json_object_get_boolean(tmp);
 
 return defval;
 }
@@ -29,7 +40,7 @@ array_list* json_get_array(json_object *o, const char *key)
 json_object *tmp;
 
 if (json_object_object_get_ex(o, key, &tmp))
-    if (json_object_is_type(o, json_type_array))
+    if (json_object_is_type(tmp, json_type_array))
     	return json_object_get_array(tmp);
 
 return NULL;
