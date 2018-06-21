@@ -18,6 +18,7 @@ struct StopData {
  const char *destinationdisplay;
  int vehicleatstop;
  int incongestion;
+ time_t destinationaimedarrivaltime;
  time_t aimedarrivaltime;
  time_t expectedarrivaltime;
  time_t aimeddeparturetime;
@@ -94,6 +95,8 @@ s.expectedarrivaltime=json_get_int(o, "expectedarrivaltime", -1);
 s.aimeddeparturetime=json_get_int(o, "aimeddeparturetime", -1);
 s.expecteddeparturetime=json_get_int(o, "expecteddeparturetime", -1);
 
+s.destinationaimedarrivaltime=json_get_int(o, "destinationaimedarrivaltime", -1);
+
 s.vehicleatstop=json_get_bool(o, "vehicleatstop", 0);
 s.incongestion=json_get_bool(o, "incongestion", 0);
 
@@ -108,6 +111,10 @@ else
 	printf("  ");
 
 print_time(&s.expecteddeparturetime);
+
+printf(" - ");
+
+print_time(&s.destinationaimedarrivaltime);
 
 printf(" %s", s.destinationdisplay);
 
@@ -138,7 +145,7 @@ strftime(outstr, sizeof(outstr), "%F %T", tmp);
 //printf("\e[1;1H\e[2J");
 printf("TkuFStop - %s %s\n\n", stop, outstr);
 //      123451212 11:22:33 D
-printf("Line @ C Time     Destination\n");
+printf("Line @ C Time       At Destination\n");
 }
 
 int foli_parse_response(json_object *obj, const char *stop)
