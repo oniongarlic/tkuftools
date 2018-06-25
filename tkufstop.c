@@ -26,6 +26,12 @@ struct StopData {
 };
 
 /* XXX: Not perfect in any way... but for now
+ *
+ * Valid are (from GTFS data):
+ * 1-9004
+ * L2, L3, L4, Ltulo
+ * PT1, PT2, PT4, PT6
+ * T1 - T10, T22, T24, T32-T42
  */
 int validate_stop(const char *stop)
 {
@@ -34,17 +40,38 @@ long int ts;
 if (strlen(stop)==0)
     return 0;
 
-if (strlen(stop)>4)
+if (strlen(stop)>5)
     return 0;
 
-if (stop[0]=='T' || stop[0]=='P') {
-    ts=strtol(stop+1, NULL, 10);
-    if (ts>0 && ts<99) /* XXX */
+if (stop[0]=='L') {
+    if (strcmp(stop, "Ltulo")==0)
         return 1;
+    ts=strtol(stop+1, NULL, 10);
+    if (ts==2 || ts==3 || ts==4)
+        return 1;
+    return 0;
 }
 
-ts=strtol(stop, NULL, 10); 
-if (ts>0 && ts<9999) /* XXX */
+if (stop[0]=='P' && stop[1]=='T') {
+    ts=strtol(stop+2, NULL, 10);
+    if (ts==1 || ts==2 || ts==4 || ts==6)
+        return 1;
+    return 0;
+}
+
+if (stop[0]=='T') {
+    ts=strtol(stop+1, NULL, 10);
+    if (ts>=1 && ts<=10)
+        return 1;
+    if (ts==22 && ts==24)
+        return 1;
+    if (ts>=32 && ts<=42)
+        return 1;
+    return 0;
+}
+
+ts=strtol(stop, NULL, 10);
+if (ts>=1 && ts<=9004)
     return 1;
 
 return 0;
