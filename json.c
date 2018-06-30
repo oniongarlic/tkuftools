@@ -98,9 +98,9 @@ switch (type) {
     break;
     case json_type_array:
     {
-        int l=json_object_array_length(o);
+        int x,l=json_object_array_length(o);
         printf("Array: items: %d\n", l);
-        for (int x=0;x<l;x++  ) {
+        for (x=0;x<l;x++  ) {
             json_object *a=json_object_array_get_idx(o, x);
             json_dump(a);
         }
