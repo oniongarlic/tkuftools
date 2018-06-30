@@ -150,12 +150,14 @@ printf("\n");
 
 void print_stops(json_object *stops)
 {
+int x,l;
+
 if (!stops) {
 	fprintf(stderr, "Invalid JSON object data\n");
 }
 // json_dump(stops);
-int l=json_object_array_length(stops);
-for (int x=0;x<l;x++  ) {
+l=json_object_array_length(stops);
+for (x=0;x<l;x++  ) {
 json_object *a=json_object_array_get_idx(stops, x);
 	print_stop(a);
 }
@@ -177,7 +179,7 @@ printf("Line @ C Time       At Destination\n");
 
 int foli_parse_response(json_object *obj, const char *stop)
 {
-char *status;
+const char *status;
 time_t t;
 
 if (!obj) {

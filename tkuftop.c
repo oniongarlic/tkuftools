@@ -57,6 +57,7 @@ void print_racks(json_object *racks)
 {
 printf("ID  Avail Slots       Name                     Flag\n");
 json_object_object_foreach(racks, key, val) {
+	(void)key;
 	print_rack(val);
 }
 }

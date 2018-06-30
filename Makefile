@@ -1,7 +1,11 @@
 CC=gcc
 LDFLAGS=-lm
 
-CFLAGS=-g -O0 -pipe
+# Debug
+# CFLAGS=-g -O0 -pipe -Wall -Werror
+
+# Release
+CFLAGS=-O2 -pipe -Wall -Werror
 
 CFLAGS += $(shell pkg-config --cflags json-c libcurl)
 LDFLAGS += $(shell pkg-config --libs json-c libcurl)
@@ -22,7 +26,7 @@ tkufstop: $(TKUFSTOP)
 	$(CC) $(TKUFSTOP) $(LDFLAGS)  -o tkufstop
 
 clean:
-	-rm tkuftop *.o
+	-rm tkuftop tkufstop *.o
 
 install:
 	install -m 755 tkuftop tkufstop $(DESTDIR)/usr/bin
