@@ -2,10 +2,12 @@ CC=gcc
 LDFLAGS=-lm
 
 # Debug
-# CFLAGS=-g -O0 -pipe -Wall -Werror
+CFLAGS=-g -O0 -Werror
 
 # Release
-CFLAGS=-O2 -pipe -Wall -Werror
+# CFLAGS=-O2
+
+CFLAGS+=-pipe -Wall -D_GNU_SOURCE
 
 CFLAGS += $(shell pkg-config --cflags json-c libcurl)
 LDFLAGS += $(shell pkg-config --libs json-c libcurl)

@@ -8,16 +8,10 @@
 #include "json.h"
 
 #define MAX_BIKES 300
+#define MAX_RACKS 50
 #define API_URL "http://data.foli.fi/citybike"
 
-struct Racks {
- int racks_total;
- int bikes_total_avail;
- time_t generated;
- time_t lastupdate;
-};
-
-struct Rack {
+typedef struct {
  const char *id;
  const char *stop_code;
  const char *operator;
@@ -28,48 +22,111 @@ struct Rack {
  int bikes_avail;
  int slots_total;
  int slots_avail;
-};
+} Rack;
 
-static struct Racks ri;
-static uint rentals=0;
-static uint returns=0;
+typedef struct {
+ int racks_total;
+ int bikes_total_avail;
+ time_t generated;
+ time_t lastupdate;
+ uint rentals;
+ uint returns;
+ Rack data[MAX_RACKS];
+} Racks;
 
-void print_rack(json_object *o)
+enum SortOrder {
+  SORT_NONE=0,
+  SORT_BIKES,
+  SORT_STOP_CODE,
+  SORT_NAME
+} sort_order=SORT_NONE;
+
+static Racks ri;
+
+static int cmp_rack_stop_code(const void * a, const void * b)
 {
-struct Rack rack;
+Rack *aa=(Rack *)a;
+Rack *bb=(Rack *)b;
 
-rack.stop_code=json_get_string(o, "stop_code");
-rack.name=json_get_string(o, "name");
-rack.bikes_avail=json_get_int(o, "bikes_avail", -1);
-rack.slots_total=json_get_int(o, "slots_total", -1);
-rack.slots_avail=json_get_int(o, "slots_avail", -1);
+return strverscmp(aa->stop_code, bb->stop_code);
+}
 
-printf("%-3s [%3d] [%3d /%3d] - %-30s", rack.stop_code, rack.bikes_avail, rack.slots_total, rack.slots_avail, rack.name);
-if (rack.bikes_avail==0)
+static int cmp_rack_name(const void * a, const void * b)
+{
+Rack *aa=(Rack *)a;
+Rack *bb=(Rack *)b;
+
+return strverscmp(aa->name, bb->name);
+}
+
+static int cmp_rack_bikes(const void * a, const void * b)
+{
+Rack *aa=(Rack *)a;
+Rack *bb=(Rack *)b;
+
+if (aa->bikes_avail>bb->bikes_avail)
+	return 1;
+else if (aa->bikes_avail>bb->bikes_avail)
+	return -1;
+
+return 0;
+}
+
+void fill_rack(json_object *o, Rack *rack)
+{
+rack->stop_code=json_get_string(o, "stop_code");
+rack->name=json_get_string(o, "name");
+rack->bikes_avail=json_get_int(o, "bikes_avail", -1);
+rack->slots_total=json_get_int(o, "slots_total", -1);
+rack->slots_avail=json_get_int(o, "slots_avail", -1);
+}
+
+void print_rack(Rack *r)
+{
+printf("%-3s [%3d] [%3d /%3d] - %-30s", r->stop_code, r->bikes_avail, r->slots_total, r->slots_avail, r->name);
+if (r->bikes_avail==0)
 	printf("!");
-else if (rack.bikes_avail<3)
+else if (r->bikes_avail<3)
 	printf("*");
 
 printf("\n");
 }
 
-void print_racks(json_object *racks)
+int fill_racks(json_object *o, Racks *ri)
 {
-printf("ID  Avail Slots       Name                     Flag\n");
-json_object_object_foreach(racks, key, val) {
+int i=0;
+json_object_object_foreach(o, key, val) {
 	(void)key;
-	print_rack(val);
-}
+	fill_rack(val, &ri->data[i]);
+	i++;
+	/* Check limits */
+	if (i>MAX_RACKS-1) {
+		return i-1;
+	}
 }
 
-int load(struct Racks *ri)
+return i;
+}
+
+void print_racks(Racks *ri)
+{
+int x;
+
+printf("ID  Avail Slots       Name                     Flag\n");
+
+for(x=0;x<ri->racks_total;x++)
+	print_rack(&ri->data[x]);
+
+}
+
+int load(Racks *ri)
 {
 float t=((float)ri->bikes_total_avail/MAX_BIKES)*100.0f;
 
 return round(100.0-t);
 }
 
-void print_header(struct Racks *ri)
+void print_header(Racks *ri)
 {
 struct tm *tmp;
 tmp = localtime(&ri->lastupdate);
@@ -78,12 +135,13 @@ char outstr[40];
 strftime(outstr, sizeof(outstr), "%F %T", tmp);
 
 printf("\e[1;1H\e[2J");
-printf("TkuFtop - %s, available %d, load %d%%\nrentals %d, returns %d\n\n", outstr, ri->bikes_total_avail, load(ri), rentals, returns);
+printf("TkuFtop - %s, available %d, load %d%%\nrentals %d, returns %d\n\n", outstr, ri->bikes_total_avail, load(ri), ri->rentals, ri->returns);
 }
 
 int follari_parse_response(json_object *obj)
 {
 int bikes;
+int rt=0;
 
 if (!obj) {
 	fprintf(stderr, "Invalid JSON object data\n");
@@ -99,21 +157,38 @@ ri.racks_total=json_get_int(obj, "rack_total", 0);
 bikes=json_get_int(obj, "bikes_total_avail", 0);
 
 if (ri.bikes_total_avail>0 && ri.bikes_total_avail<bikes)
-    rentals+=bikes-ri.bikes_total_avail;
+    ri.rentals+=bikes-ri.bikes_total_avail;
 else if (ri.bikes_total_avail>0 && ri.bikes_total_avail>bikes)
-    returns+=ri.bikes_total_avail-bikes;
+    ri.returns+=ri.bikes_total_avail-bikes;
 
 ri.bikes_total_avail=bikes;
 
 ri.generated=json_get_int(obj, "generated", 0);
 ri.lastupdate=json_get_int(obj, "lastupdate", 0);
 
-print_header(&ri);
-
 json_object *racks;
 if (json_object_object_get_ex(obj, "racks", &racks)) {
-	print_racks(racks);
+	rt=fill_racks(racks, &ri);
 }
+
+ri.racks_total=rt;
+
+print_header(&ri);
+
+switch (sort_order) {
+	case SORT_STOP_CODE:
+		qsort(ri.data, ri.racks_total, sizeof(Rack), cmp_rack_stop_code);
+	break;
+	case SORT_BIKES:
+		qsort(ri.data, ri.racks_total, sizeof(Rack), cmp_rack_bikes);
+	break;
+	case SORT_NAME:
+		qsort(ri.data, ri.racks_total, sizeof(Rack), cmp_rack_name);
+	break;
+	default:;
+}
+
+print_racks(&ri);
 
 json_object_put(obj);
 
@@ -133,9 +208,34 @@ return 0;
 
 int main (int argc, char **argv)
 {
+int opt;
+
+while ((opt = getopt(argc, argv, "s:")) != -1) {
+    switch (opt) {
+    case 's':
+	if (strcmp(optarg, "stop")==0)
+		sort_order=SORT_STOP_CODE;
+	else if (strcmp(optarg, "bikes")==0)
+		sort_order=SORT_BIKES;
+	else if (strcmp(optarg, "name")==0)
+		sort_order=SORT_NAME;
+	else {
+	        fprintf(stderr, "Valid sort options are: stop,bikes,name\n");
+		exit(1);
+	}
+    break;
+    default:
+        fprintf(stderr, "Usage: %s [-s order] %o\n", argv[0], opt);
+        exit(1);
+    }
+}
+
+
 http_init();
 
 ri.bikes_total_avail=-1;
+ri.rentals=0;
+ri.returns=0;
 
 while (follari_update()==0) {
 	sleep(5);
