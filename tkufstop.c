@@ -11,7 +11,7 @@
 
 #define API_URL_BASE "http://data.foli.fi/siri/stops"
 
-struct StopData {
+typedef struct {
  const char *lineref;
  const char *originref;
  const char *destinationref;
@@ -23,7 +23,7 @@ struct StopData {
  time_t expectedarrivaltime;
  time_t aimeddeparturetime;
  time_t expecteddeparturetime;
-};
+} StopData;
 
 /* XXX: Not perfect in any way... but for now
  *
@@ -99,7 +99,7 @@ printf("%s", outstr);
 
 void print_stop(json_object *o)
 {
-struct StopData s;
+StopData s;
 
 if (!o) {
 	fprintf(stderr, "Invalid JSON object data\n");
