@@ -4,6 +4,11 @@
 #include <time.h>
 #include <math.h>
 
+#include <termios.h>
+#include <sys/select.h>
+
+#include <signal.h>
+
 #include "http.h"
 #include "json.h"
 
@@ -42,6 +47,8 @@ enum SortOrder {
 } sort_order=SORT_NONE;
 
 static Racks ri;
+
+static int loop_done=0;
 
 static int cmp_rack_stop_code(const void * a, const void * b)
 {
@@ -206,11 +213,75 @@ follari_parse_response(obj);
 return 0;
 }
 
+void action_term(int signum)
+{
+loop_done=1;
+}
+
+void main_loop()
+{
+static struct termios oldt, newt;
+struct timeval tv;
+fd_set rfds;
+struct sigaction action;
+
+memset(&action, 0, sizeof(action));
+action.sa_handler = action_term;
+sigaction(SIGTERM, &action, NULL);
+
+tcgetattr( STDIN_FILENO, &oldt);
+
+newt=oldt;
+newt.c_lflag &= ~(ICANON | ECHO);
+
+tcsetattr( STDIN_FILENO, TCSANOW, &newt);
+
+while (loop_done==0) {
+	if (follari_update()!=0)
+		break;
+
+	FD_ZERO(&rfds);
+	FD_SET(STDIN_FILENO, &rfds);
+
+	tv.tv_sec = 5;
+	tv.tv_usec = 0;
+
+	int r=select(1, &rfds, NULL, NULL, &tv);
+	if (r==-1) {
+		perror("select");
+		break;
+	}
+	if (FD_ISSET(0, &rfds)) {
+		char c=getchar();
+		switch (c) {
+		case 'q':
+			loop_done=1;
+ 		break;
+		case 's':
+			sort_order=SORT_STOP_CODE;
+		break;
+		case 'b':
+			sort_order=SORT_BIKES;
+		break;
+		case 'n':
+			sort_order=SORT_NAME;
+		break;
+		default:;
+			fprintf(stderr, "Unknown command: %c!\n", c);sleep(1);
+		break;
+		}
+	}
+}
+
+tcsetattr( STDIN_FILENO, TCSANOW, &oldt);
+}
+
 int main (int argc, char **argv)
 {
 int opt;
+int mode=0;
 
-while ((opt = getopt(argc, argv, "s:")) != -1) {
+while ((opt = getopt(argc, argv, "os:")) != -1) {
     switch (opt) {
     case 's':
 	if (strcmp(optarg, "stop")==0)
@@ -224,8 +295,11 @@ while ((opt = getopt(argc, argv, "s:")) != -1) {
 		exit(1);
 	}
     break;
+    case 'o':
+	mode=1;
+    break;
     default:
-        fprintf(stderr, "Usage: %s [-s order] %o\n", argv[0], opt);
+        fprintf(stderr, "Usage: %s [-o] [-s order] %o\n", argv[0], opt);
         exit(1);
     }
 }
@@ -237,9 +311,10 @@ ri.bikes_total_avail=-1;
 ri.rentals=0;
 ri.returns=0;
 
-while (follari_update()==0) {
-	sleep(5);
-}
+if (mode==1)
+	follari_update();
+else
+	main_loop();
 
 http_deinit();
 
