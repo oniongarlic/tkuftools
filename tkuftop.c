@@ -187,6 +187,7 @@ switch (sort_order) {
 		qsort(ri.data, ri.racks_total, sizeof(Rack), cmp_rack_stop_code);
 	break;
 	case SORT_BIKES:
+		qsort(ri.data, ri.racks_total, sizeof(Rack), cmp_rack_name);
 		qsort(ri.data, ri.racks_total, sizeof(Rack), cmp_rack_bikes);
 	break;
 	case SORT_NAME:
