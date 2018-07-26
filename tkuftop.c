@@ -46,6 +46,12 @@ enum SortOrder {
   SORT_NAME
 } sort_order=SORT_NONE;
 
+enum OpModes {
+  MODE_TOP=0,
+  MODE_ONESHOT,
+  MODE_CSV
+} opmode=MODE_TOP;
+
 static Racks ri;
 
 static int loop_done=0;
@@ -86,6 +92,8 @@ rack->name=json_get_string(o, "name");
 rack->bikes_avail=json_get_int(o, "bikes_avail", -1);
 rack->slots_total=json_get_int(o, "slots_total", -1);
 rack->slots_avail=json_get_int(o, "slots_avail", -1);
+rack->lat=json_get_double(o, "lat", 0);
+rack->lon=json_get_double(o, "lon", 0);
 }
 
 void print_rack(Rack *r)
@@ -97,6 +105,20 @@ else if (r->bikes_avail<3)
 	printf("*");
 
 printf("\n");
+}
+
+void print_rack_csv(Rack *r)
+{
+printf("%s,%d,%d,%d,%f,%f,%s\n", r->stop_code, r->bikes_avail, r->slots_total, r->slots_avail, r->lat, r->lon, r->name);
+}
+
+void print_racks_csv(Racks *ri)
+{
+int x;
+
+printf("ID,Available,SlotsTotal,SlotsAvailable,Lat,Lon,Name\n");
+for(x=0;x<ri->racks_total;x++)
+	print_rack_csv(&ri->data[x]);
 }
 
 int fill_racks(json_object *o, Racks *ri)
@@ -114,6 +136,7 @@ json_object_object_foreach(o, key, val) {
 
 return i;
 }
+
 
 void print_racks(Racks *ri)
 {
@@ -180,8 +203,6 @@ if (json_object_object_get_ex(obj, "racks", &racks)) {
 
 ri.racks_total=rt;
 
-print_header(&ri);
-
 switch (sort_order) {
 	case SORT_STOP_CODE:
 		qsort(ri.data, ri.racks_total, sizeof(Rack), cmp_rack_stop_code);
@@ -196,7 +217,12 @@ switch (sort_order) {
 	default:;
 }
 
-print_racks(&ri);
+if (opmode==MODE_CSV) {
+	print_racks_csv(&ri);
+} else {
+	print_header(&ri);
+	print_racks(&ri);
+}
 
 json_object_put(obj);
 
@@ -280,9 +306,8 @@ tcsetattr( STDIN_FILENO, TCSANOW, &oldt);
 int main (int argc, char **argv)
 {
 int opt;
-int mode=0;
 
-while ((opt = getopt(argc, argv, "os:")) != -1) {
+while ((opt = getopt(argc, argv, "cos:")) != -1) {
     switch (opt) {
     case 's':
 	if (strcmp(optarg, "stop")==0)
@@ -297,10 +322,13 @@ while ((opt = getopt(argc, argv, "os:")) != -1) {
 	}
     break;
     case 'o':
-	mode=1;
+	opmode=MODE_ONESHOT;
+    break;
+    case 'c':
+	opmode=MODE_CSV;
     break;
     default:
-        fprintf(stderr, "Usage: %s [-o] [-s order] %o\n", argv[0], opt);
+        fprintf(stderr, "Usage: %s [-o] [-s order] [-c] %o\n", argv[0], opt);
         exit(1);
     }
 }
@@ -312,10 +340,15 @@ ri.bikes_total_avail=-1;
 ri.rentals=0;
 ri.returns=0;
 
-if (mode==1)
-	follari_update();
-else
-	main_loop();
+switch (opmode) {
+	case MODE_TOP:
+		main_loop();
+	break;
+	case MODE_CSV:
+	case MODE_ONESHOT:
+		follari_update();
+	break;
+}
 
 http_deinit();
 
