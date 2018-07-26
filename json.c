@@ -24,6 +24,17 @@ if (json_object_object_get_ex(o, key, &tmp))
 return defval;
 }
 
+double json_get_double(json_object *o, const char *key, double defval)
+{
+json_object *tmp;
+
+if (json_object_object_get_ex(o, key, &tmp))
+    if (json_object_is_type(tmp, json_type_double))
+    	return json_object_get_double(tmp);
+
+return defval;
+}
+
 int json_get_bool(json_object *o, const char *key, int defval)
 {
 json_object *tmp;
