@@ -11,33 +11,10 @@
 
 #include "http.h"
 #include "json.h"
+#include "racks.h"
 
 #define MAX_BIKES 300
-#define MAX_RACKS 50
 #define API_URL "http://data.foli.fi/citybike"
-
-typedef struct {
- const char *id;
- const char *stop_code;
- const char *operator;
- const char *name;
- time_t last_seen;
- double lon;
- double lat;
- int bikes_avail;
- int slots_total;
- int slots_avail;
-} Rack;
-
-typedef struct {
- int racks_total;
- int bikes_total_avail;
- time_t generated;
- time_t lastupdate;
- uint rentals;
- uint returns;
- Rack data[MAX_RACKS];
-} Racks;
 
 enum SortOrder {
   SORT_NONE=0,
@@ -85,17 +62,6 @@ else if (aa->bikes_avail>bb->bikes_avail)
 return 0;
 }
 
-void fill_rack(json_object *o, Rack *rack)
-{
-rack->stop_code=json_get_string(o, "stop_code");
-rack->name=json_get_string(o, "name");
-rack->bikes_avail=json_get_int(o, "bikes_avail", -1);
-rack->slots_total=json_get_int(o, "slots_total", -1);
-rack->slots_avail=json_get_int(o, "slots_avail", -1);
-rack->lat=json_get_double(o, "lat", 0);
-rack->lon=json_get_double(o, "lon", 0);
-}
-
 void print_rack(Rack *r)
 {
 printf("%-3s [%3d] [%3d /%3d] - %-30s", r->stop_code, r->bikes_avail, r->slots_total, r->slots_avail, r->name);
@@ -120,23 +86,6 @@ printf("ID,Available,SlotsTotal,SlotsAvailable,Lat,Lon,Name\n");
 for(x=0;x<ri->racks_total;x++)
 	print_rack_csv(&ri->data[x]);
 }
-
-int fill_racks(json_object *o, Racks *ri)
-{
-int i=0;
-json_object_object_foreach(o, key, val) {
-	(void)key;
-	fill_rack(val, &ri->data[i]);
-	i++;
-	/* Check limits */
-	if (i>MAX_RACKS-1) {
-		return i-1;
-	}
-}
-
-return i;
-}
-
 
 void print_racks(Racks *ri)
 {
@@ -198,7 +147,7 @@ ri.lastupdate=json_get_int(obj, "lastupdate", 0);
 
 json_object *racks;
 if (json_object_object_get_ex(obj, "racks", &racks)) {
-	rt=fill_racks(racks, &ri);
+	rt=racks_fill_from_json(racks, &ri);
 }
 
 ri.racks_total=rt;

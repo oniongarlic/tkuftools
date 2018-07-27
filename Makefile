@@ -12,7 +12,7 @@ CFLAGS+=-pipe -Wall -D_GNU_SOURCE
 CFLAGS += $(shell pkg-config --cflags json-c libcurl)
 LDFLAGS += $(shell pkg-config --libs json-c libcurl)
 
-COBJ=json.o http.o
+COBJ=json.o http.o racks.o
 
 TKUFTOP=tkuftop.o $(COBJ)
 TKUFSTOP=tkufstop.o $(COBJ)
