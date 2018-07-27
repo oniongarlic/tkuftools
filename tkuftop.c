@@ -9,6 +9,8 @@
 
 #include <signal.h>
 
+#include <mosquitto.h>
+
 #include "http.h"
 #include "json.h"
 #include "racks.h"
@@ -26,12 +28,15 @@ enum SortOrder {
 enum OpModes {
   MODE_TOP=0,
   MODE_ONESHOT,
-  MODE_CSV
+  MODE_CSV,
+  MODE_MQTT
 } opmode=MODE_TOP;
 
 static Racks ri;
 
 static int loop_done=0;
+
+static struct mosquitto *mqtt = NULL;
 
 static int cmp_rack_stop_code(const void * a, const void * b)
 {
@@ -252,11 +257,45 @@ while (loop_done==0) {
 tcsetattr( STDIN_FILENO, TCSANOW, &oldt);
 }
 
+void mqtt_publish_rack(Rack *rack)
+{
+char *topic;
+char *data;
+
+// mosquitto_publish(mqtt, int *mid, const char *topic, int payloadlen,const void *payload,int qos, bool retain);
+}
+
+void mqtt_log_callback(struct mosquitto *m, void *userdata, int level, const char *str)
+{
+fprintf(stderr, "[MQTT-%d] %s\n", level, str);
+}
+
+void main_loop_mqtt()
+{
+char *host = "localhost";
+int port = 1883;
+int keepalive = 60;
+bool clean_session = true;
+
+mqtt=mosquitto_new(NULL, clean_session, NULL);
+
+mosquitto_log_callback_set(mqtt, mqtt_log_callback);
+
+if (mosquitto_connect(mqtt, host, port, keepalive)) {
+	fprintf(stderr, "Unable to connect.\n");
+	goto mqtt_out;
+}
+
+mqtt_out:;
+
+mosquitto_destroy(mqtt);
+}
+
 int main (int argc, char **argv)
 {
 int opt;
 
-while ((opt = getopt(argc, argv, "cos:")) != -1) {
+while ((opt = getopt(argc, argv, "mcos:")) != -1) {
     switch (opt) {
     case 's':
 	if (strcmp(optarg, "stop")==0)
@@ -276,13 +315,16 @@ while ((opt = getopt(argc, argv, "cos:")) != -1) {
     case 'c':
 	opmode=MODE_CSV;
     break;
+    case 'm':
+	opmode=MODE_MQTT;
+    break;
     default:
         fprintf(stderr, "Usage: %s [-o] [-s order] [-c] %o\n", argv[0], opt);
         exit(1);
     }
 }
 
-
+mosquitto_lib_init();
 http_init();
 
 ri.bikes_total_avail=-1;
@@ -293,6 +335,9 @@ switch (opmode) {
 	case MODE_TOP:
 		main_loop();
 	break;
+	case MODE_MQTT:
+		main_loop_mqtt();
+	break;
 	case MODE_CSV:
 	case MODE_ONESHOT:
 		follari_update();
@@ -300,6 +345,7 @@ switch (opmode) {
 }
 
 http_deinit();
+mosquitto_lib_cleanup();
 
 return 0;
 }

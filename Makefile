@@ -12,6 +12,9 @@ CFLAGS+=-pipe -Wall -D_GNU_SOURCE
 CFLAGS += $(shell pkg-config --cflags json-c libcurl)
 LDFLAGS += $(shell pkg-config --libs json-c libcurl)
 
+# MQTT Support
+LDFLAGS+=-lmosquitto
+
 COBJ=json.o http.o racks.o
 
 TKUFTOP=tkuftop.o $(COBJ)
