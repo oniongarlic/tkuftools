@@ -37,6 +37,9 @@ static Racks ri;
 static int loop_done=0;
 
 static struct mosquitto *mqtt = NULL;
+char *mqtt_host=NULL;
+char *mqtt_clientid=NULL;
+char *mqtt_topic_prefix=NULL;
 
 static int cmp_rack_stop_code(const void * a, const void * b)
 {
@@ -101,6 +104,32 @@ printf("ID  Avail Slots       Name                     Flag\n");
 for(x=0;x<ri->racks_total;x++)
 	print_rack(&ri->data[x]);
 
+}
+
+int mqtt_publish_rack(Rack *rack)
+{
+int r;
+char topic[80];
+char data[256];
+
+snprintf(topic, sizeof(topic), "%s/%s", mqtt_topic_prefix, rack->stop_code);
+snprintf(data, sizeof(data), "%d", rack->bikes_avail);
+
+r=mosquitto_publish(mqtt, NULL, topic, strlen(data), data, 0, false);
+if (r!=MOSQ_ERR_SUCCESS)
+	fprintf(stderr, "MQTT Publish for rack [%s] failed with %s\n", rack->stop_code, mosquitto_strerror(r));
+
+return r;
+}
+
+void mqtt_publish_racks(Racks *ri)
+{
+uint x;
+
+for(x=0;x<ri->racks_total;x++) {
+	mqtt_publish_rack(&ri->data[x]);
+	mosquitto_loop(mqtt, 100, 1);
+}
 }
 
 int load(Racks *ri)
@@ -171,11 +200,17 @@ switch (sort_order) {
 	default:;
 }
 
-if (opmode==MODE_CSV) {
-	print_racks_csv(&ri);
-} else {
-	print_header(&ri);
-	print_racks(&ri);
+switch (opmode) {
+	case MODE_CSV:
+		print_racks_csv(&ri);
+	break;
+	case MODE_MQTT:
+		mqtt_publish_racks(&ri);
+	break;
+	default:
+		print_header(&ri);
+		print_racks(&ri);
+	break;
 }
 
 json_object_put(obj);
@@ -257,13 +292,6 @@ while (loop_done==0) {
 tcsetattr( STDIN_FILENO, TCSANOW, &oldt);
 }
 
-void mqtt_publish_rack(Rack *rack)
-{
-char *topic;
-char *data;
-
-// mosquitto_publish(mqtt, int *mid, const char *topic, int payloadlen,const void *payload,int qos, bool retain);
-}
 
 void mqtt_log_callback(struct mosquitto *m, void *userdata, int level, const char *str)
 {
@@ -272,18 +300,27 @@ fprintf(stderr, "[MQTT-%d] %s\n", level, str);
 
 void main_loop_mqtt()
 {
-char *host = "localhost";
 int port = 1883;
-int keepalive = 60;
+int keepalive = 120;
 bool clean_session = true;
 
-mqtt=mosquitto_new(NULL, clean_session, NULL);
+printf("MQTT Mode: Host: '%s' ID: '%s' Tprefix: '%s'\n", mqtt_host, mqtt_clientid, mqtt_topic_prefix);
+
+mqtt=mosquitto_new(mqtt_clientid, clean_session, NULL);
 
 mosquitto_log_callback_set(mqtt, mqtt_log_callback);
 
-if (mosquitto_connect(mqtt, host, port, keepalive)) {
+if (mosquitto_connect(mqtt, mqtt_host, port, keepalive)) {
 	fprintf(stderr, "Unable to connect.\n");
 	goto mqtt_out;
+}
+
+while (1) {
+	if (follari_update()!=0)
+		break;
+
+	mosquitto_loop(mqtt, 1000, 1);
+	sleep(9);
 }
 
 mqtt_out:;
@@ -295,7 +332,7 @@ int main (int argc, char **argv)
 {
 int opt;
 
-while ((opt = getopt(argc, argv, "mcos:")) != -1) {
+while ((opt = getopt(argc, argv, "mcos:t:h:i:")) != -1) {
     switch (opt) {
     case 's':
 	if (strcmp(optarg, "stop")==0)
@@ -317,9 +354,21 @@ while ((opt = getopt(argc, argv, "mcos:")) != -1) {
     break;
     case 'm':
 	opmode=MODE_MQTT;
+	mqtt_host="localhost";
+	mqtt_topic_prefix="citybike/turku";
+	mqtt_clientid="";
+    break;
+    case 'h':
+	mqtt_host=optarg;
+    break;
+    case 't':
+	mqtt_topic_prefix=optarg;
+    break;
+    case 'i':
+	mqtt_clientid=optarg;
     break;
     default:
-        fprintf(stderr, "Usage: %s [-o] [-s order] [-c] %o\n", argv[0], opt);
+        fprintf(stderr, "Usage: %s [-o] [-s order] [-c] [-m -h host -i clientid -t topicprefix] %o\n", argv[0], opt);
         exit(1);
     }
 }
