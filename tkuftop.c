@@ -70,6 +70,13 @@ else if (aa->bikes_avail>bb->bikes_avail)
 return 0;
 }
 
+static int load(Racks *ri)
+{
+float t=((float)ri->bikes_total_avail/MAX_BIKES)*100.0f;
+
+return round(100.0-t);
+}
+
 void print_rack(Rack *r)
 {
 printf("%-3s [%3d] [%3d /%3d] - %-30s", r->stop_code, r->bikes_avail, r->slots_total, r->slots_avail, r->name);
@@ -106,37 +113,45 @@ for(x=0;x<ri->racks_total;x++)
 
 }
 
-int mqtt_publish_rack(Rack *rack)
+int mqtt_publish_info_topic_int(const char *topic, int value)
 {
 int r;
-char topic[80];
+char ftopic[80];
 char data[256];
 
-snprintf(topic, sizeof(topic), "%s/%s", mqtt_topic_prefix, rack->stop_code);
-snprintf(data, sizeof(data), "%d", rack->bikes_avail);
+snprintf(ftopic, sizeof(ftopic), "%s/%s", mqtt_topic_prefix, topic);
+snprintf(data, sizeof(data), "%d", value);
 
 r=mosquitto_publish(mqtt, NULL, topic, strlen(data), data, 0, false);
 if (r!=MOSQ_ERR_SUCCESS)
-	fprintf(stderr, "MQTT Publish for rack [%s] failed with %s\n", rack->stop_code, mosquitto_strerror(r));
+	fprintf(stderr, "MQTT Publish for info [%s] failed with %s\n", topic, mosquitto_strerror(r));
 
 return r;
+}
+
+void mqtt_publish_info(Racks *ri)
+{
+mqtt_publish_info_topic_int("total", ri->bikes_total_avail);
+mqtt_publish_info_topic_int("load", load(ri));
+mqtt_publish_info_topic_int("rentals", ri->rentals);
+mqtt_publish_info_topic_int("returns", ri->returns);
+}
+
+int mqtt_publish_rack(Rack *rack)
+{
+return mqtt_publish_info_topic_int(rack->stop_code, rack->bikes_avail);
 }
 
 void mqtt_publish_racks(Racks *ri)
 {
 uint x;
 
+mqtt_publish_info(ri);
+
 for(x=0;x<ri->racks_total;x++) {
 	mqtt_publish_rack(&ri->data[x]);
 	mosquitto_loop(mqtt, 100, 1);
 }
-}
-
-int load(Racks *ri)
-{
-float t=((float)ri->bikes_total_avail/MAX_BIKES)*100.0f;
-
-return round(100.0-t);
 }
 
 void print_header(Racks *ri)
