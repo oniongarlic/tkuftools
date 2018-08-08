@@ -5,6 +5,7 @@ void rack_fill_from_json(json_object *o, Rack *rack)
 {
 rack->stop_code=json_get_string(o, "stop_code");
 rack->name=json_get_string(o, "name");
+rack->last_seen=json_get_int(o, "last_seen", 0);
 rack->bikes_avail=json_get_int(o, "bikes_avail", -1);
 rack->slots_total=json_get_int(o, "slots_total", -1);
 rack->slots_avail=json_get_int(o, "slots_avail", -1);
