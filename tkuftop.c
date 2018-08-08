@@ -27,10 +27,15 @@ enum SortOrder {
 
 enum OpModes {
   MODE_TOP=0,
-  MODE_ONESHOT,
   MODE_CSV,
+  MODE_SQL,
   MODE_MQTT
 } opmode=MODE_TOP;
+
+enum RunModes {
+  MODE_CONTINUOUS=0,
+  MODE_ONESHOT
+} runmode=MODE_CONTINUOUS;
 
 static Racks ri;
 
@@ -101,6 +106,32 @@ printf("ID,Available,SlotsTotal,SlotsAvailable,Lat,Lon,Name\n");
 for(x=0;x<ri->racks_total;x++)
 	print_rack_csv(&ri->data[x]);
 }
+
+void print_rack_sql_geo(Rack *r)
+{
+printf("INSERT INTO racks (id,name,location) VALUES (%s, '%s', ST_GeographyFromText('SRID=4326;POINT(%f %f)'));\n",
+	r->stop_code, r->name, r->lon, r->lat);
+}
+
+void print_rack_sql(Rack *r)
+{
+struct tm *tmp=localtime(&r->last_seen);
+char outstr[40];
+
+strftime(outstr, sizeof(outstr), "%F %T", tmp);
+
+printf("INSERT INTO rack_status (id,dt,bikes) VALUES (%s,'%s',%d);\n", r->stop_code, outstr, r->bikes_avail);
+}
+
+void print_racks_sql(Racks *ri)
+{
+int x;
+
+for(x=0;x<ri->racks_total;x++) {
+	print_rack_sql(&ri->data[x]);
+}
+}
+
 
 void print_racks(Racks *ri)
 {
@@ -218,6 +249,9 @@ switch (sort_order) {
 switch (opmode) {
 	case MODE_CSV:
 		print_racks_csv(&ri);
+	break;
+	case MODE_SQL:
+		print_racks_sql(&ri);
 	break;
 	case MODE_MQTT:
 		mqtt_publish_racks(&ri);
@@ -347,7 +381,7 @@ int main (int argc, char **argv)
 {
 int opt;
 
-while ((opt = getopt(argc, argv, "mcos:t:h:i:")) != -1) {
+while ((opt = getopt(argc, argv, "qmcos:t:h:i:")) != -1) {
     switch (opt) {
     case 's':
 	if (strcmp(optarg, "stop")==0)
@@ -362,10 +396,13 @@ while ((opt = getopt(argc, argv, "mcos:t:h:i:")) != -1) {
 	}
     break;
     case 'o':
-	opmode=MODE_ONESHOT;
+	runmode=MODE_ONESHOT;
     break;
     case 'c':
 	opmode=MODE_CSV;
+    break;
+    case 'q':
+	opmode=MODE_SQL;
     break;
     case 'm':
 	opmode=MODE_MQTT;
@@ -383,7 +420,15 @@ while ((opt = getopt(argc, argv, "mcos:t:h:i:")) != -1) {
 	mqtt_clientid=optarg;
     break;
     default:
-        fprintf(stderr, "Usage: %s [-o] [-s order] [-c] [-m -h host -i clientid -t topicprefix] %o\n", argv[0], opt);
+        fprintf(stderr, "Usage: %s\n\n", argv[0]);
+        fprintf(stderr, " -s order 	Sort by order (stop,bikes,name)\n");
+        fprintf(stderr, " -o 		Oneshot mode, display current status and exit\n");
+        fprintf(stderr, " -c 		Output rack info as CSV\n");
+        fprintf(stderr, " -q 		Output rack info as SQL INSERT commands\n");
+        fprintf(stderr, " -m 		MQTT mode\n");
+        fprintf(stderr, "  -h 		MQTT host\n");
+        fprintf(stderr, "  -t 		MQTT topic prefix\n");
+        fprintf(stderr, "  -i 		MQTT client id\n");
         exit(1);
     }
 }
@@ -395,18 +440,30 @@ ri.bikes_total_avail=-1;
 ri.rentals=0;
 ri.returns=0;
 
-switch (opmode) {
+if (runmode==MODE_CONTINUOUS) {
+	switch (opmode) {
+	case MODE_SQL:
+	case MODE_CSV:
 	case MODE_TOP:
 		main_loop();
 	break;
 	case MODE_MQTT:
 		main_loop_mqtt();
 	break;
+	}
+} else if (runmode==MODE_ONESHOT) {
+	switch (opmode) {
+	case MODE_SQL:
 	case MODE_CSV:
-	case MODE_ONESHOT:
+	case MODE_TOP:
 		follari_update();
 	break;
+	default:
+	        fprintf(stderr, "Mode not supported\n");
+	break;
+	}
 }
+
 
 http_deinit();
 mosquitto_lib_cleanup();
