@@ -29,6 +29,7 @@ enum OpModes {
   MODE_TOP=0,
   MODE_CSV,
   MODE_SQL,
+  MODE_SQL_GEO,
   MODE_MQTT
 } opmode=MODE_TOP;
 
@@ -113,6 +114,15 @@ printf("INSERT INTO racks (id,name,location) VALUES (%s, '%s', ST_GeographyFromT
 	r->stop_code, r->name, r->lon, r->lat);
 }
 
+void print_racks_sql_geo(Racks *ri)
+{
+int x;
+
+for(x=0;x<ri->racks_total;x++)
+	print_rack_sql_geo(&ri->data[x]);
+
+}
+
 void print_rack_sql(Rack *r)
 {
 struct tm *tmp=localtime(&r->last_seen);
@@ -131,7 +141,6 @@ for(x=0;x<ri->racks_total;x++) {
 	print_rack_sql(&ri->data[x]);
 }
 }
-
 
 void print_racks(Racks *ri)
 {
@@ -252,6 +261,9 @@ switch (opmode) {
 	break;
 	case MODE_SQL:
 		print_racks_sql(&ri);
+	break;
+	case MODE_SQL_GEO:
+		print_racks_sql_geo(&ri);
 	break;
 	case MODE_MQTT:
 		mqtt_publish_racks(&ri);
@@ -381,7 +393,7 @@ int main (int argc, char **argv)
 {
 int opt;
 
-while ((opt = getopt(argc, argv, "qmcos:t:h:i:")) != -1) {
+while ((opt = getopt(argc, argv, "qgmcos:t:h:i:")) != -1) {
     switch (opt) {
     case 's':
 	if (strcmp(optarg, "stop")==0)
@@ -404,6 +416,10 @@ while ((opt = getopt(argc, argv, "qmcos:t:h:i:")) != -1) {
     case 'q':
 	opmode=MODE_SQL;
     break;
+    case 'g':
+	opmode=MODE_SQL_GEO;
+	runmode=MODE_ONESHOT;
+    break;
     case 'm':
 	opmode=MODE_MQTT;
 	mqtt_host="localhost";
@@ -425,6 +441,7 @@ while ((opt = getopt(argc, argv, "qmcos:t:h:i:")) != -1) {
         fprintf(stderr, " -o 		Oneshot mode, display current status and exit\n");
         fprintf(stderr, " -c 		Output rack info as CSV\n");
         fprintf(stderr, " -q 		Output rack info as SQL INSERT commands\n");
+        fprintf(stderr, " -g 		Output rack Geo locations as SQL INSERT commands\n");
         fprintf(stderr, " -m 		MQTT mode\n");
         fprintf(stderr, "  -h 		MQTT host\n");
         fprintf(stderr, "  -t 		MQTT topic prefix\n");
@@ -450,10 +467,14 @@ if (runmode==MODE_CONTINUOUS) {
 	case MODE_MQTT:
 		main_loop_mqtt();
 	break;
+	default:
+	        fprintf(stderr, "Mode not supported\n");
+	break;
 	}
 } else if (runmode==MODE_ONESHOT) {
 	switch (opmode) {
 	case MODE_SQL:
+	case MODE_SQL_GEO:
 	case MODE_CSV:
 	case MODE_TOP:
 		follari_update();
