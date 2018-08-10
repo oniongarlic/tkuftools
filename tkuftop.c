@@ -354,6 +354,22 @@ tcsetattr( STDIN_FILENO, TCSANOW, &oldt);
 }
 
 
+void main_loop_simple()
+{
+struct sigaction action;
+
+memset(&action, 0, sizeof(action));
+action.sa_handler = action_term;
+sigaction(SIGTERM, &action, NULL);
+
+while (loop_done==0) {
+	if (follari_update()!=0)
+		break;
+	sleep(5);
+}
+
+}
+
 void mqtt_log_callback(struct mosquitto *m, void *userdata, int level, const char *str)
 {
 fprintf(stderr, "[MQTT-%d] %s\n", level, str);
@@ -461,6 +477,8 @@ if (runmode==MODE_CONTINUOUS) {
 	switch (opmode) {
 	case MODE_SQL:
 	case MODE_CSV:
+		main_loop_simple();
+	break;
 	case MODE_TOP:
 		main_loop();
 	break;
