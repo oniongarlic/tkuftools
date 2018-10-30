@@ -162,7 +162,7 @@ char data[256];
 snprintf(ftopic, sizeof(ftopic), "%s/%s", mqtt_topic_prefix, topic);
 snprintf(data, sizeof(data), "%d", value);
 
-r=mosquitto_publish(mqtt, NULL, topic, strlen(data), data, 0, false);
+r=mosquitto_publish(mqtt, NULL, ftopic, strlen(data), data, 0, false);
 if (r!=MOSQ_ERR_SUCCESS)
 	fprintf(stderr, "MQTT Publish for info [%s] failed with %s\n", topic, mosquitto_strerror(r));
 
