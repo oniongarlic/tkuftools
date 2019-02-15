@@ -25,6 +25,8 @@ typedef struct {
  time_t expecteddeparturetime;
 } StopData;
 
+static int max_departures=0;
+
 /* XXX: Not perfect in any way... but for now
  *
  * Valid are (from GTFS data):
@@ -157,10 +159,16 @@ if (!stops) {
 }
 // json_dump(stops);
 l=json_object_array_length(stops);
-for (x=0;x<l;x++  ) {
-json_object *a=json_object_array_get_idx(stops, x);
+
+// Limit departures output to first max_departures
+if (max_departures>0 && l>max_departures)
+	l=max_departures;
+
+for (x=0;x<l;x++) {
+	json_object *a=json_object_array_get_idx(stops, x);
 	print_stop(a);
 }
+
 }
 
 void print_header(time_t *t, const char *stop)
@@ -235,9 +243,10 @@ return 0;
 int main (int argc, char **argv)
 {
 const char *stop;
+int rows=0;
 
-if (argc!=2) {
-    fprintf(stderr, "Usage: tkfstop stopref\n");
+if (argc<2) {
+    fprintf(stderr, "Usage: tkfstop stopref [rows]\n");
     return 1;
 }
 
@@ -246,6 +255,13 @@ if (validate_stop(stop)!=1) {
     fprintf(stderr, "Invalid stop ref\n");
     return 1;
 }
+if (argc==3) {
+	rows=atoi(argv[2]);
+	if (rows<0)
+        	rows=0;
+	max_departures=rows;
+}
+
 
 http_init();
 
