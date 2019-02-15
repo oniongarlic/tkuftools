@@ -32,7 +32,7 @@ static int max_departures=0;
  * Valid are (from GTFS data):
  * 1-9004
  * L2, L3, L4, Ltulo
- * PT1, PT2, PT4, PT6
+ * PT1, PT2, PT4, PT5, PT6
  * T1 - T10, T22, T24, T32-T42
  */
 int validate_stop(const char *stop)
@@ -56,7 +56,7 @@ if (stop[0]=='L') {
 
 if (stop[0]=='P' && stop[1]=='T') {
     ts=strtol(stop+2, NULL, 10);
-    if (ts==1 || ts==2 || ts==4 || ts==5 || ts==6)
+    if (ts==1 || ts==2 || ts==4 || ts==5 || ts==6)
         return 1;
     return 0;
 }
