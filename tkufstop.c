@@ -56,7 +56,7 @@ if (stop[0]=='L') {
 
 if (stop[0]=='P' && stop[1]=='T') {
     ts=strtol(stop+2, NULL, 10);
-    if (ts==1 || ts==2 || ts==4 || ts==6)
+    if (ts==1 || ts==2 || ts==4 || ts==5 || ts==6)
         return 1;
     return 0;
 }
