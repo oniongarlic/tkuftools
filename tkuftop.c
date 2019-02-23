@@ -236,6 +236,10 @@ ri.lastupdate=json_get_int(obj, "lastupdate", 0);
 
 json_object *racks;
 if (json_object_object_get_ex(obj, "racks", &racks)) {
+        if (!json_object_is_type(racks, json_type_object)) {
+                fprintf(stderr, "\"racks\" is not an object\n");
+                return -1;
+        }
 	rt=racks_fill_from_json(racks, &ri);
 }
 
