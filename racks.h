@@ -23,8 +23,8 @@ typedef struct {
  int bikes_total_avail;
  time_t generated;
  time_t lastupdate;
- uint rentals;
- uint returns;
+ unsigned int rentals;
+ unsigned int returns;
  Rack data[RACKS_MAX];
 } Racks;
 
