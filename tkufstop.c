@@ -203,7 +203,7 @@ if (!json_object_is_type(obj, json_type_object)) {
 t=json_get_int(obj, "servertime", 0);
 status=json_get_string(obj, "status");
 
-if (strcmp(status,"OK")!=0) {
+if (status != NULL && strcmp(status,"OK")!=0) {
 	fprintf(stderr, "Server status not OK\n");
 	return -1;   
 }
