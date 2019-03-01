@@ -1,6 +1,8 @@
 #ifndef _RACKS_H
 #define _RACKS_H
 
+#include <time.h>
+
 #define RACKS_MAX (50)
 
 typedef struct {
