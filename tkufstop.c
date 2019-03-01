@@ -212,6 +212,10 @@ print_header(&t, stop);
 
 json_object *s;
 if (json_object_object_get_ex(obj, "result", &s)) {
+        if (!json_object_is_type(s, json_type_array)) {
+                fprintf(stderr, "\"results\" field is not an array\n");
+                return -1;
+        }
 	print_stops(s);
 }
 
