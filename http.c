@@ -28,7 +28,7 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
   return realsize;
 }
 
-static void http_prepare(char *url, struct MemoryStruct *chunk)
+static void http_prepare(const char *url, struct MemoryStruct *chunk)
 {
 curl = curl_easy_init();
 curl_easy_setopt(curl, CURLOPT_URL, url);
@@ -38,7 +38,7 @@ curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
 curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)chunk);
 }
 
-static int http_get(char *url, struct MemoryStruct *chunk)
+static int http_get(const char *url, struct MemoryStruct *chunk)
 {
 long http_code=0;
 CURLcode res;
@@ -67,7 +67,7 @@ if (http_code!=200)
 return 0;
 }
 
-json_object *http_get_json(char *url)
+json_object *http_get_json(const char *url)
 {
 struct MemoryStruct chunk;
 

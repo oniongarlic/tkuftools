@@ -49,24 +49,24 @@ char *mqtt_topic_prefix=NULL;
 
 static int cmp_rack_stop_code(const void * a, const void * b)
 {
-Rack *aa=(Rack *)a;
-Rack *bb=(Rack *)b;
+const Rack *aa=(const Rack *)a;
+const Rack *bb=(const Rack *)b;
 
 return strverscmp(aa->stop_code, bb->stop_code);
 }
 
 static int cmp_rack_name(const void * a, const void * b)
 {
-Rack *aa=(Rack *)a;
-Rack *bb=(Rack *)b;
+const Rack *aa=(const Rack *)a;
+const Rack *bb=(const Rack *)b;
 
 return strverscmp(aa->name, bb->name);
 }
 
 static int cmp_rack_bikes(const void * a, const void * b)
 {
-Rack *aa=(Rack *)a;
-Rack *bb=(Rack *)b;
+const Rack *aa=(const Rack *)a;
+const Rack *bb=(const Rack *)b;
 
 if (aa->bikes_avail>bb->bikes_avail)
 	return 1;
@@ -279,7 +279,7 @@ json_object_put(obj);
 return 0;
 }
 
-int follari_update()
+int follari_update(void)
 {
 json_object *obj=http_get_json(API_URL);
 if (!obj)
@@ -295,7 +295,7 @@ void action_term(int signum)
 loop_done=1;
 }
 
-void main_loop()
+void main_loop(void)
 {
 static struct termios oldt, newt;
 struct timeval tv;
@@ -354,7 +354,7 @@ tcsetattr( STDIN_FILENO, TCSANOW, &oldt);
 }
 
 
-void main_loop_simple()
+void main_loop_simple(void)
 {
 struct sigaction action;
 
@@ -375,7 +375,7 @@ void mqtt_log_callback(struct mosquitto *m, void *userdata, int level, const cha
 fprintf(stderr, "[MQTT-%d] %s\n", level, str);
 }
 
-void main_loop_mqtt()
+void main_loop_mqtt(void)
 {
 int port = 1883;
 int keepalive = 120;
