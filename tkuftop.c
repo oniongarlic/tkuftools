@@ -43,9 +43,9 @@ static Racks ri;
 static int loop_done=0;
 
 static struct mosquitto *mqtt = NULL;
-char *mqtt_host=NULL;
-char *mqtt_clientid=NULL;
-char *mqtt_topic_prefix=NULL;
+const char *mqtt_host=NULL;
+const char *mqtt_clientid=NULL;
+const char *mqtt_topic_prefix=NULL;
 
 static int cmp_rack_stop_code(const void * a, const void * b)
 {
