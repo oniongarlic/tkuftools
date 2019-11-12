@@ -12,6 +12,10 @@ CFLAGS+=-pipe -Wall -D_GNU_SOURCE
 CFLAGS += $(shell pkg-config --cflags json-c libcurl)
 LDFLAGS += $(shell pkg-config --libs json-c libcurl)
 
+CFLAGS += -Wstrict-prototypes
+CFLAGS += -Wunreachable-code
+CFLAGS += -Wwrite-strings -Wpointer-arith -Wbad-function-cast -Wcast-align -Wcast-qual
+
 # MQTT Support
 LDFLAGS+=-lmosquitto
 
