@@ -203,7 +203,7 @@ if (!json_object_is_type(obj, json_type_object)) {
 t=json_get_int(obj, "servertime", 0);
 status=json_get_string(obj, "status");
 
-if (strcmp(status,"OK")!=0) {
+if (status != NULL && strcmp(status,"OK")!=0) {
 	fprintf(stderr, "Server status not OK\n");
 	return -1;   
 }
@@ -212,6 +212,10 @@ print_header(&t, stop);
 
 json_object *s;
 if (json_object_object_get_ex(obj, "result", &s)) {
+        if (!json_object_is_type(s, json_type_array)) {
+                fprintf(stderr, "\"results\" field is not an array\n");
+                return -1;
+        }
 	print_stops(s);
 }
 
