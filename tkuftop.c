@@ -52,7 +52,11 @@ static int cmp_rack_stop_code(const void * a, const void * b)
 const Rack *aa=(const Rack *)a;
 const Rack *bb=(const Rack *)b;
 
+#ifdef _GNU_SOURCE
 return strverscmp(aa->stop_code, bb->stop_code);
+#else
+return strcmp(aa->stop_code, bb->stop_code);
+#endif
 }
 
 static int cmp_rack_name(const void * a, const void * b)
@@ -60,7 +64,11 @@ static int cmp_rack_name(const void * a, const void * b)
 const Rack *aa=(const Rack *)a;
 const Rack *bb=(const Rack *)b;
 
+#ifdef _GNU_SOURCE
 return strverscmp(aa->name, bb->name);
+#else
+return strcmp(aa->name, bb->name);
+#endif
 }
 
 static int cmp_rack_bikes(const void * a, const void * b)

@@ -7,10 +7,13 @@ CFLAGS=-g -O0 -Werror
 # Release
 # CFLAGS=-O2
 
-CFLAGS+=-pipe -Wall -D_GNU_SOURCE
+# OS X
+#CFLAGS+=-pipe -Wall
 
-CFLAGS += $(shell pkg-config --cflags json-c libcurl)
-LDFLAGS += $(shell pkg-config --libs json-c libcurl)
+#CFLAGS+=-pipe -Wall -D_GNU_SOURCE
+
+CFLAGS += $(shell pkg-config --cflags json-c libcurl libmosquitto)
+LDFLAGS += $(shell pkg-config --libs json-c libcurl libmosquitto) 
 
 # MQTT Support
 LDFLAGS+=-lmosquitto
