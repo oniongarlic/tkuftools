@@ -28,7 +28,7 @@ typedef struct {
  Rack data[RACKS_MAX];
 } Racks;
 
-void rack_fill_from_json(json_object *o, Rack *rack);
+int rack_fill_from_json(json_object *o, Rack *rack);
 int racks_fill_from_json(json_object *o, Racks *ri);
 
 #endif

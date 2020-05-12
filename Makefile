@@ -15,6 +15,10 @@ CFLAGS=-g -O0 -Werror
 CFLAGS += $(shell pkg-config --cflags json-c libcurl libmosquitto)
 LDFLAGS += $(shell pkg-config --libs json-c libcurl libmosquitto) 
 
+CFLAGS += -Wstrict-prototypes
+CFLAGS += -Wunreachable-code
+CFLAGS += -Wwrite-strings -Wpointer-arith -Wbad-function-cast -Wcast-align -Wcast-qual
+
 # MQTT Support
 LDFLAGS+=-lmosquitto
 
