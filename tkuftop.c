@@ -104,14 +104,19 @@ printf("\n");
 
 void print_rack_csv(Rack *r)
 {
-printf("%s,%d,%d,%d,%f,%f,%s\n", r->stop_code, r->bikes_avail, r->slots_total, r->slots_avail, r->lat, r->lon, r->name);
+struct tm *tmp=localtime(&r->last_seen);
+char dt[40];
+
+strftime(dt, sizeof(dt), "%F %T", tmp);
+
+printf("%s,%s,%d,%d,%d,%f,%f,%s\n", r->stop_code, dt, r->bikes_avail, r->slots_total, r->slots_avail, r->lat, r->lon, r->name);
 }
 
 void print_racks_csv(Racks *ri)
 {
 int x;
 
-printf("ID,Available,SlotsTotal,SlotsAvailable,Lat,Lon,Name\n");
+printf("ID,DT,Available,SlotsTotal,SlotsAvailable,Lat,Lon,Name\n");
 for(x=0;x<ri->racks_total;x++)
 	print_rack_csv(&ri->data[x]);
 }
