@@ -12,15 +12,26 @@ CFLAGS=-g -O0 -Werror
 
 #CFLAGS+=-pipe -Wall -D_GNU_SOURCE
 
-CFLAGS += $(shell pkg-config --cflags json-c libcurl libmosquitto)
-LDFLAGS += $(shell pkg-config --libs json-c libcurl libmosquitto) 
-
 CFLAGS += -Wstrict-prototypes
 CFLAGS += -Wunreachable-code
 CFLAGS += -Wwrite-strings -Wpointer-arith -Wbad-function-cast -Wcast-align -Wcast-qual
 
-# MQTT Support
+# libcurl and json-c
+ifeq ($(shell pkg-config --exists json-c libcurl && echo 0),0)
+CFLAGS += $(shell pkg-config --cflags json-c libcurl)
+LDFLAGS += $(shell pkg-config --libs json-c libcurl)
+else
+$(error json-c and libcurl is required)
+endif
+
+# libmosquitto MQTT Support
+ifeq ($(shell pkg-config --exists libmosquitto && echo 0),0)
+CFLAGS += $(shell pkg-config --cflags libmosquitto)
+LDFLAGS += $(shell pkg-config --libs libmosquitto)
+else
+$(warning assuming libmosquitto exists in the system)
 LDFLAGS+=-lmosquitto
+endif
 
 COBJ=json.o http.o racks.o
 
