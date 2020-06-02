@@ -479,7 +479,6 @@ while ((opt = getopt(argc, argv, "qgmcos:t:h:i:")) != -1) {
     }
 }
 
-mosquitto_lib_init();
 http_init();
 
 ri.bikes_total_avail=-1;
@@ -496,7 +495,9 @@ if (runmode==MODE_CONTINUOUS) {
 		main_loop();
 	break;
 	case MODE_MQTT:
+		mosquitto_lib_init();
 		main_loop_mqtt();
+		mosquitto_lib_cleanup();
 	break;
 	default:
 	        fprintf(stderr, "Mode not supported\n");
@@ -518,7 +519,6 @@ if (runmode==MODE_CONTINUOUS) {
 
 
 http_deinit();
-mosquitto_lib_cleanup();
 
 return 0;
 }
