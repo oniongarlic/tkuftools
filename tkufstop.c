@@ -27,6 +27,12 @@ typedef struct {
 
 static int max_departures=0;
 
+enum OpModes {
+  MODE_TOP=0,
+  MODE_ONESHOT,
+} opmode=MODE_ONESHOT;
+
+
 /* XXX: Not perfect in any way... but for now
  *
  * Valid are (from GTFS data):
@@ -240,13 +246,24 @@ free(s);
 return 0;
 }
 
+int main_loop_stop(const char *stop)
+{
+while (1) {
+	printf("\e[1;1H\e[2J");
+	if (foli_stop_update(stop)!=0)
+	    return 1;
+	sleep(5);
+}
+return 0;
+}
+
 int main (int argc, char **argv)
 {
 const char *stop;
-int rows=0;
+int rows=0,ret=0,opt,runmode=MODE_ONESHOT;
 
 if (argc<2) {
-    fprintf(stderr, "Usage: tkfstop stopref [rows]\n");
+    fprintf(stderr, "Usage: tkfstop stopref [-r rows] [-o] [-t]\n");
     return 1;
 }
 
@@ -255,22 +272,42 @@ if (validate_stop(stop)!=1) {
     fprintf(stderr, "Invalid stop ref\n");
     return 1;
 }
-if (argc==3) {
-	rows=atoi(argv[2]);
+
+/* Skip stop */
+optind=2;
+
+while ((opt = getopt(argc, argv, "otr:")) != -1) {
+    switch (opt) {
+    case 't':
+        opmode=MODE_TOP;
+    break;
+    case 'o':
+        opmode=MODE_ONESHOT;
+    break;
+    case 'r':
+	rows=atoi(optarg);
 	if (rows<0)
         	rows=0;
 	max_departures=rows;
+    break;
+    }
 }
-
 
 http_init();
 
-if (foli_stop_update(stop)!=0) {
-    fprintf(stderr, "Invalid stop or no data\n");
-    return 2;
+switch (opmode) {
+	case MODE_TOP:
+	ret=main_loop_stop(stop);
+	break;
+	case MODE_ONESHOT:
+	default:
+	if (foli_stop_update(stop)!=0) {
+		fprintf(stderr, "Invalid stop or no data\n");
+		ret=2;
+	}
 }
 
 http_deinit();
-return 0;
+return ret;
 }
 
