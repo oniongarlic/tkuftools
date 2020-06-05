@@ -229,7 +229,7 @@ json_object_put(obj);
 return 0;
 }
 
-int foli_stop_update(const char *stop)
+int foli_stop_update(char *stop)
 {
 char *s;
 int l;
@@ -249,12 +249,21 @@ free(s);
 return 0;
 }
 
+int foli_stops_update(char *stops[], int n)
+{
+for (int i=0;i<n;i++) {
+    if (foli_stop_update(stops[i])!=0)
+        return 1;
+}
+return 0;
+}
+
 void action_term(int signum)
 {
 loop_done=1;
 }
 
-int main_loop_stop(const char *stop)
+int main_loop_stop(char *stops[], int n)
 {
 struct sigaction action;
 
@@ -264,31 +273,41 @@ sigaction(SIGTERM, &action, NULL);
 
 while (loop_done==0) {
 	printf("\e[1;1H\e[2J");
-	if (foli_stop_update(stop)!=0)
-	    return 1;
+    foli_stops_update(stops, n);
 	sleep(5);
 }
 return 0;
 }
 
+#define MAX_STOPS (10)
 
 int main (int argc, char **argv)
 {
-const char *stop;
-int rows=0,ret=0,opt,runmode=MODE_ONESHOT;
+char *stop;
+char *stops[MAX_STOPS];
+int rows=0,ret=0,opt,runmode=MODE_ONESHOT,i=0;
 
 if (argc<2) {
-    fprintf(stderr, "Usage: tkfstop stopref [-r rows] [-o] [-t]\n");
+    fprintf(stderr, "Usage: tkfstop stoprefs [-r rows] [-o] [-t]\n");
     return 1;
 }
 
 stop=argv[1];
-if (validate_stop(stop)!=1) {
-    fprintf(stderr, "Invalid stop ref\n");
-    return 1;
+
+char *p=strtok (stop, ",");
+while (p!=NULL) {
+    if (validate_stop(p)!=1) {
+        fprintf(stderr, "Invalid stop ref [%s] given\n", p);
+        return 1;
+    }
+    stops[i]=p;
+    if (i>MAX_STOPS-1)
+        break;
+    i++;
+    p=strtok (NULL, ",");
 }
 
-/* Skip stop */
+/* Skip stops */
 optind=2;
 
 while ((opt = getopt(argc, argv, "otr:")) != -1) {
@@ -312,11 +331,11 @@ http_init();
 
 switch (opmode) {
 	case MODE_TOP:
-	ret=main_loop_stop(stop);
+	ret=main_loop_stop(stops, i);
 	break;
 	case MODE_ONESHOT:
 	default:
-	if (foli_stop_update(stop)!=0) {
+	if (foli_stops_update(stops, i)!=0) {
 		fprintf(stderr, "Invalid stop or no data\n");
 		ret=2;
 	}
