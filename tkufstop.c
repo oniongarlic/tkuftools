@@ -189,7 +189,7 @@ char outstr[40];
 strftime(outstr, sizeof(outstr), "%F %T", tmp);
 
 //printf("\e[1;1H\e[2J");
-printf("TkuFStop - %s %s\n\n", stop, outstr);
+printf("TkuFStop - %s %s\n", stop, outstr);
 //      123451212 11:22:33 D
 printf("Line @ C Time       At Destination\n");
 }
@@ -214,7 +214,7 @@ status=json_get_string(obj, "status");
 
 if (strcmp(status,"OK")!=0) {
 	fprintf(stderr, "Server status not OK\n");
-	return -1;   
+	return -1;
 }
 
 print_header(&t, stop);
@@ -252,8 +252,9 @@ return 0;
 int foli_stops_update(char *stops[], int n)
 {
 for (int i=0;i<n;i++) {
-    if (foli_stop_update(stops[i])!=0)
-        return 1;
+	if (foli_stop_update(stops[i])!=0)
+        	return 1;
+	printf("\n");
 }
 return 0;
 }
@@ -273,7 +274,10 @@ sigaction(SIGTERM, &action, NULL);
 
 while (loop_done==0) {
 	printf("\e[1;1H\e[2J");
-    foli_stops_update(stops, n);
+
+	if (foli_stops_update(stops, n)!=0)
+		return 1;
+
 	sleep(5);
 }
 return 0;
