@@ -6,6 +6,8 @@
 #include <time.h>
 #include <math.h>
 
+#include <signal.h>
+
 #include "http.h"
 #include "json.h"
 
@@ -26,6 +28,7 @@ typedef struct {
 } StopData;
 
 static int max_departures=0;
+static int loop_done=0;
 
 enum OpModes {
   MODE_TOP=0,
@@ -246,9 +249,20 @@ free(s);
 return 0;
 }
 
+void action_term(int signum)
+{
+loop_done=1;
+}
+
 int main_loop_stop(const char *stop)
 {
-while (1) {
+struct sigaction action;
+
+memset(&action, 0, sizeof(action));
+action.sa_handler = action_term;
+sigaction(SIGTERM, &action, NULL);
+
+while (loop_done==0) {
 	printf("\e[1;1H\e[2J");
 	if (foli_stop_update(stop)!=0)
 	    return 1;
@@ -256,6 +270,7 @@ while (1) {
 }
 return 0;
 }
+
 
 int main (int argc, char **argv)
 {
