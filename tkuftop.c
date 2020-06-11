@@ -14,6 +14,7 @@
 #include "http.h"
 #include "json.h"
 #include "racks.h"
+#include "mqtt.h"
 
 #define MAX_BIKES 300
 #define API_URL "http://data.foli.fi/citybike"
@@ -166,33 +167,17 @@ for(x=0;x<ri->racks_total;x++)
 
 }
 
-int mqtt_publish_info_topic_int(const char *topic, int value)
-{
-int r;
-char ftopic[80];
-char data[256];
-
-snprintf(ftopic, sizeof(ftopic), "%s/%s", mqtt_topic_prefix, topic);
-snprintf(data, sizeof(data), "%d", value);
-
-r=mosquitto_publish(mqtt, NULL, ftopic, strlen(data), data, 0, false);
-if (r!=MOSQ_ERR_SUCCESS)
-	fprintf(stderr, "MQTT Publish for info [%s] failed with %s\n", topic, mosquitto_strerror(r));
-
-return r;
-}
-
 void mqtt_publish_info(Racks *ri)
 {
-mqtt_publish_info_topic_int("total", ri->bikes_total_avail);
-mqtt_publish_info_topic_int("load", load(ri));
-mqtt_publish_info_topic_int("rentals", ri->rentals);
-mqtt_publish_info_topic_int("returns", ri->returns);
+mqtt_publish_info_topic_int(mqtt, mqtt_topic_prefix, "total", ri->bikes_total_avail);
+mqtt_publish_info_topic_int(mqtt, mqtt_topic_prefix, "load", load(ri));
+mqtt_publish_info_topic_int(mqtt, mqtt_topic_prefix, "rentals", ri->rentals);
+mqtt_publish_info_topic_int(mqtt, mqtt_topic_prefix, "returns", ri->returns);
 }
 
 int mqtt_publish_rack(Rack *rack)
 {
-return mqtt_publish_info_topic_int(rack->stop_code, rack->bikes_avail);
+return mqtt_publish_info_topic_int(mqtt, mqtt_topic_prefix, rack->stop_code, rack->bikes_avail);
 }
 
 void mqtt_publish_racks(Racks *ri)

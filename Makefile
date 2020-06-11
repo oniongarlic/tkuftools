@@ -33,7 +33,7 @@ $(warning assuming libmosquitto exists in the system)
 LDFLAGS+=-lmosquitto
 endif
 
-COBJ=json.o http.o racks.o
+COBJ=json.o http.o mqtt.o racks.o
 
 TKUFTOP=tkuftop.o $(COBJ)
 TKUFSTOP=tkufstop.o $(COBJ)
