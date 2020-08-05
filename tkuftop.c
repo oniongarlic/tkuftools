@@ -299,6 +299,7 @@ static struct termios oldt, newt;
 struct timeval tv;
 fd_set rfds;
 struct sigaction action;
+int d=5;
 
 memset(&action, 0, sizeof(action));
 action.sa_handler = action_term;
@@ -318,7 +319,7 @@ while (loop_done==0) {
 	FD_ZERO(&rfds);
 	FD_SET(STDIN_FILENO, &rfds);
 
-	tv.tv_sec = 5;
+	tv.tv_sec = d;
 	tv.tv_usec = 0;
 
 	int r=select(1, &rfds, NULL, NULL, &tv);
@@ -340,6 +341,16 @@ while (loop_done==0) {
 		break;
 		case 'n':
 			sort_order=SORT_NAME;
+		break;
+		case '+':
+			if (d<60)
+				d++;
+			fprintf(stderr, "Delay set to %d\n", d);sleep(1);
+		break;
+		case '-':
+			if (d>5)
+				d--;
+			fprintf(stderr, "Delay set to %d\n", d);sleep(1);
 		break;
 		default:;
 			fprintf(stderr, "Unknown command: %c!\n", c);sleep(1);
