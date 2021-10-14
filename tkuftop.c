@@ -87,6 +87,8 @@ return 0;
 
 static int load(Racks *ri)
 {
+if (ri->bikes_total_avail==0)
+	return 0.0;
 float t=((float)ri->bikes_total_avail/MAX_BIKES)*100.0f;
 
 return round(100.0-t);
